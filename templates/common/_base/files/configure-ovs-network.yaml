@@ -186,8 +186,8 @@ contents:
             con-name "$bridge_name" \
             conn.interface "$bridge_name" \
             802-3-ethernet.mtu ${iface_mtu} \
-            ipv4.route-metric 100 \
-            ipv6.route-metric 100 \
+            ipv4.route-metric 50 \
+            ipv6.route-metric 50 \
             ${extra_brex_args}
       fi
 
@@ -313,7 +313,7 @@ contents:
         else
           nmcli c add type ovs-interface slave-type ovs-port conn.interface "$bridge_name" master "$ovs_port" con-name \
             "$ovs_interface" 802-3-ethernet.mtu ${iface_mtu} 802-3-ethernet.cloned-mac-address ${iface_mac} \
-            ipv4.route-metric 100 ipv6.route-metric 100
+            ipv4.route-metric 50 ipv6.route-metric 50
         fi
       fi
 
