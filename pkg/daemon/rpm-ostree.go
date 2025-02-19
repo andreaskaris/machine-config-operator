@@ -28,6 +28,10 @@ const (
 	imageRegistryAuthFile = "/etc/mco/internal-registry-pull-secret.json"
 )
 
+var (
+	osTreeReadyCheck = []string{"systemctl", "is-active", "ostree-finalize-staged.service"}
+)
+
 // imageInspection is a public implementation of
 // https://github.com/containers/skopeo/blob/82186b916faa9c8c70cfa922229bafe5ae024dec/cmd/skopeo/inspect.go#L20-L31
 type imageInspection struct {
@@ -63,6 +67,20 @@ func NewNodeUpdaterClient() RpmOstreeClient {
 // in case of error.
 func runRpmOstree(args ...string) error {
 	return runCmdSync("rpm-ostree", args...)
+}
+
+// Synchronously invoke rpm-ostree, writing its stdout to our stdout,
+// and gathering stderr into a buffer which will be returned in err
+// in case of error. In addition, wait for systemd service
+// ostree-finalize-staged.service to be active.
+func runRpmOstreeAndFinalize(args ...string) error {
+	if err := runRpmOstree(args...); err != nil {
+		return err
+	}
+	if _, err := pivotutils.RunExt(numRetriesNetCommands, osTreeReadyCheck[0], osTreeReadyCheck[1:]...); err != nil {
+		return err
+	}
+	return nil
 }
 
 // See https://bugzilla.redhat.com/show_bug.cgi?id=2111817
@@ -241,7 +259,7 @@ func (r *RpmOstreeClient) RebaseLayered(imgURL string) (err error) {
 	// Try to re-link the merged pull secrets if they exist, since it could have been populated without a daemon reboot
 	useMergedPullSecrets()
 	klog.Infof("Executing rebase to %s", imgURL)
-	return runRpmOstree("rebase", "--experimental", "ostree-unverified-registry:"+imgURL)
+	return runRpmOstreeAndFinalize("rebase", "--experimental", "ostree-unverified-registry:"+imgURL)
 }
 
 // linkOstreeAuthFile gives the rpm-ostree client access to secrets in the file located at `path` by symlinking so that

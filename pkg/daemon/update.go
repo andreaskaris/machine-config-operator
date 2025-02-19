@@ -1641,7 +1641,7 @@ func (dn *CoreOSDaemon) updateKernelArguments(oldKernelArguments, newKernelArgum
 
 	args := append([]string{"kargs"}, kargs...)
 	logSystem("Running rpm-ostree %v", args)
-	return runRpmOstree(args...)
+	return runRpmOstreeAndFinalize(args...)
 }
 
 func (dn *Daemon) generateExtensionsArgs(oldConfig, newConfig *mcfgv1.MachineConfig) []string {
@@ -1750,7 +1750,7 @@ func (dn *CoreOSDaemon) applyExtensions(oldConfig, newConfig *mcfgv1.MachineConf
 
 	args := dn.generateExtensionsArgs(oldConfig, newConfig)
 	klog.Infof("Applying extensions : %+q", args)
-	return runRpmOstree(args...)
+	return runRpmOstreeAndFinalize(args...)
 }
 
 // switchKernel updates kernel on host with the kernelType specified in MachineConfig.
@@ -1797,7 +1797,7 @@ func (dn *CoreOSDaemon) switchKernel(oldConfig, newConfig *mcfgv1.MachineConfig)
 			args = append(args, "--install", pkg)
 		}
 
-		return runRpmOstree(args...)
+		return runRpmOstreeAndFinalize(args...)
 	} else if newKtype == ctrlcommon.KernelType64kPages {
 		// Switch to 64k pages kernel
 		args := []string{"override", "remove"}
@@ -1806,7 +1806,7 @@ func (dn *CoreOSDaemon) switchKernel(oldConfig, newConfig *mcfgv1.MachineConfig)
 			args = append(args, "--install", pkg)
 		}
 
-		return runRpmOstree(args...)
+		return runRpmOstreeAndFinalize(args...)
 	}
 	return fmt.Errorf("unhandled kernel type %s", newKtype)
 }
@@ -2579,7 +2579,7 @@ func (dn *Daemon) queueRevertKernelSwap() error {
 		for _, pkg := range kernelExtLayers {
 			args = append(args, "--uninstall", pkg)
 		}
-		err := runRpmOstree(args...)
+		err := runRpmOstreeAndFinalize(args...)
 		if err != nil {
 			return err
 		}
